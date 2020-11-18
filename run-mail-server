@@ -11,7 +11,7 @@ failed="\e[1m\e[91m[FAILED]\e[91m\e[0m"
 # Globar vars
 env_file_docker="mail.env"
 env_file_bash="mail.env.bash"
-
+env_vars=""
 # Script
 
 ## Functions
@@ -19,7 +19,7 @@ env_file_bash="mail.env.bash"
 function set_vars {
     echo -en "$info Temporary exporting sensitive data to environment variables..."
     # Ensure $env_file_bash does not exist
-    rm env_file_bash 2&> /dev/null
+    rm $env_file_bash 2&> /dev/null
     # Parse docker-friendly env vars and make them bash-friendly
     while IFS='=' read -r name value; do
         if [ -z "$value" -o -z "$name" ]; then
@@ -44,11 +44,13 @@ function set_vars {
 
 function fill_config {
     echo -e "$info Filling files with environment data..."
+    env_vars=$(grep -v '^#' $env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
     readarray -d '' files_to_subst < <(find dovecot postfix vimbadmin -type f -print0)
     for file in "${files_to_subst[@]}"
     do
+        echo "vars" $env_vars
         echo -en "Replacing all variables of $file..."
-        envsubst < $file > $file.tmp
+        envsubst "$(printf '${%s} ' $env_vars)" < $file > $file.tmp
         if [[ "$?" -eq 0 ]]; then
         mv $file.tmp $file
             echo -e " $ok"
@@ -89,9 +91,9 @@ fi
 ## Export env vars
 set_vars
 ## Prepare folder hierarchy
-cp -r dovecot.dist dovecot
-cp -r postfix.dist postfix
-cp -r vimbadmin.dist vimbadmin
+cp -a dovecot.dist dovecot
+cp -a postfix.dist postfix
+cp -a vimbadmin.dist vimbadmin
 ## Test docker-compose configuration
 test_config
 ## Replace vimbadmin env ocurrences
