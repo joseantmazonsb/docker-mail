@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update && apt-get -qq install software-properties-common && apt-add-repository ppa:ondrej/php && apt-get -qq update && \
     apt-get -qq install mcrypt php7.3 php7.3-cgi php7.3-memcache \
@@ -25,5 +25,5 @@ WORKDIR $INSTALL_PATH
 
 EXPOSE 443
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash /docker-entrypoint.sh"]
 CMD apachectl -DFOREGROUND

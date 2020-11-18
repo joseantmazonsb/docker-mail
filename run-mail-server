@@ -44,10 +44,7 @@ function set_vars {
 
 function fill_config {
     echo -e "$info Filling files with environment data..."
-    cp -r dovecot/config.dist dovecot/config
-    cp -r postfix/config.dist postfix/config
-    cp -r vimbadmin/config.dist vimbadmin/config
-    readarray -d '' files_to_subst < <(find */config -type f -print0)
+    readarray -d '' files_to_subst < <(find dovecot postfix vimbadmin -type f -print0)
     for file in "${files_to_subst[@]}"
     do
         echo -en "Replacing all variables of $file..."
@@ -81,7 +78,7 @@ function test_config {
 
 function clean_resources {
     echo -e "$info Cleaning resources..."
-    find */config -maxdepth 0 | xargs rm -rf
+    rm -rf dovecot postfix vimbadmin
 }
 
 ## Error check
@@ -91,6 +88,10 @@ if [[ "$EUID" -ne 0 ]]; then
 fi
 ## Export env vars
 set_vars
+## Prepare folder hierarchy
+cp -r dovecot.dist dovecot
+cp -r postfix.dist postfix
+cp -r vimbadmin.dist vimbadmin
 ## Test docker-compose configuration
 test_config
 ## Replace vimbadmin env ocurrences
