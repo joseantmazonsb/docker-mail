@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# Tags
+info="\e[1m\e[36m[INFO]\e[36m\e[0m"
+warn="\e[1m\e[33m[WARNING]\e[33m\e[0m"
+error="\e[1m\e[31m[ERROR]\e[31m\e[0m"
+success="\e[1m\e[92m[SUCCESS]\e[92m\e[0m"
+ok="\e[1m\e[32m[OK]\e[32m\e[0m"
+failed="\e[1m\e[91m[FAILED]\e[91m\e[0m"
+
+# Globar vars
+env_file_docker="mail.env"
+env_file_bash="mail.env.bash"
+
+# Script
+
+## Functions
+
+function set_vars {
+    echo -en "$info Temporary exporting sensitive data to environment variables..."
+    # Ensure $env_file_bash does not exist
+    rm env_file_bash 2&> /dev/null
+    # Parse docker-friendly env vars and make them bash-friendly
+    while IFS='=' read -r name value; do
+        if [ -z "$value" -o -z "$name" ]; then
+            echo -e "$error Unparsable line!"
+            exit 1
+        fi
+        # add quotes around `'`
+        value=$(<<<"$value" sed "s/'/'\''/g")
+        # set variable with name $name to the value $value
+        echo "$name='$value'" >> $env_file_bash 
+    done <$env_file_docker
+    # Export vars
+    export $(xargs <$env_file_bash)
+    if [[ "$?" -eq 0 ]]; then
+        echo -e " $ok"
+    else
+        echo -e " $failed"
+        echo -e "$error Something went wrong. Check $env_file_bash and $env_file_docker."
+        exit 1
+    fi
+}
+
+function fill_config {
+    echo -e "$info Filling files with environment data..."
+    cp -r dovecot/config.dist dovecot/config
+    cp -r postfix/config.dist postfix/config
+    cp -r vimbadmin/config.dist vimbadmin/config
+    readarray -d '' files_to_subst < <(find */config -type f -print0)
+    for file in "${files_to_subst[@]}"
+    do
+        echo -en "Replacing all variables of $file..."
+        envsubst < $file > $file.tmp
+        if [[ "$?" -eq 0 ]]; then
+        mv $file.tmp $file
+            echo -e " $ok"
+        else
+            echo -e " $failed"
+            echo -e "$error Something went wrong. Check $file."
+            exit 1
+        fi
+    done
+}
+
+function unset_vars {
+    echo -e "$info Unsetting environment variables..."
+    unset $(grep -v '^#' $env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
+    rm $env_file_bash
+}
+
+function test_config {
+    echo -e "$info Testing configuration..."
+    docker-compose config
+    if [[ "$?" -ne 0 ]]; then
+        echo -e "$error Ups, docker-compose configuration does not seem right. Make sure you fill all variables inside mail.env, and don't quote any of them."
+        unset_vars
+        exit 1
+    fi
+}
+
+function clean_resources {
+    echo -e "$info Cleaning resources..."
+    find */config -maxdepth 0 | xargs rm -rf
+}
+
+## Error check
+if [[ "$EUID" -ne 0 ]]; then
+   echo -e "$error This script must be run as root." 
+   exit 1
+fi
+## Export env vars
+set_vars
+## Test docker-compose configuration
+test_config
+## Replace vimbadmin env ocurrences
+fill_config
+## Run containers using docker-compose
+echo -e "$info Building and running containers..."
+#CERTS_DIR=$CERTS_DIR docker-compose up --detach
+docker-compose up --detach --build
+composeResult=$?
+## Unset ENV vars
+unset_vars
+## Clean resources
+clean_resources
+if [[ "$composeResult" -ne 0 ]]; then
+    echo -e "$error docker-compose failed."
+    exit 1
+fi
+echo -e "$success All done!"
+exit 0

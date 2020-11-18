@@ -1,0 +1,5 @@
+user            = $MYSQL_USER
+password        = $MYSQL_PASSWORD
+dbname          = $MYSQL_DATABASE
+hosts           = db_host
+query           = SELECT 1 FROM virtual_user WHERE email='%s'

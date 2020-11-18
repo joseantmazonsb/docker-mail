@@ -1,0 +1,93 @@
+version: '3.1'
+
+networks:
+  
+  front:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/30
+  
+  back:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.1.0/29
+
+services:
+
+  db:
+    image: "mysql:latest"
+    command: --default-authentication-plugin=mysql_native_password --bind-address=10.0.1.2
+    restart: always
+    env_file:
+      - ./mail.env
+    networks:
+      back:
+        ipv4_address: 10.0.1.2
+
+  dovecot:
+    build: 
+      context: ./dovecot
+    image: "dovecot:latest"
+    restart: always
+    env_file:
+      - ./mail.env
+    extra_hosts:
+      db_host: 10.0.1.2
+      postfix_host: 10.0.1.4
+    volumes:
+      - "${CERTS_DIR}:${CERTS_DIR}"
+    ports:
+      - "143:143"
+      - "993:993"
+    networks:
+      back:
+        ipv4_address: 10.0.1.3
+    depends_on:
+      - "db"
+
+  postfix:
+    build:
+      context: ./postfix
+    image: "postfix:latest"
+    restart: always
+    env_file:
+      - ./mail.env
+    extra_hosts:
+      db_host: 10.0.1.2
+      dovecot_host: 10.0.1.3
+    volumes:
+      - "/dev/log:/dev/log"
+      - "${CERTS_DIR}:${CERTS_DIR}"
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+    networks:
+      back:
+        ipv4_address: 10.0.1.4
+    depends_on:
+      - "db"
+      
+  vimbadmin:
+    build:
+      context: ./vimbadmin
+    image: "vimbadmin:latest"
+    restart: always
+    env_file:
+      - ./mail.env
+    extra_hosts:
+      db_host: 10.0.1.2
+      dovecot_host: 10.0.1.3
+      postfix_host: 10.0.1.4
+    volumes:
+      - "${CERTS_DIR}:${CERTS_DIR}"
+      - "${INSTALL_PATH}:${INSTALL_PATH}"
+    networks:
+      front:
+        ipv4_address: 10.0.0.2
+      back:
+        ipv4_address: 10.0.1.5
+    depends_on:
+      - "db"
