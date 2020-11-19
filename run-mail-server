@@ -48,7 +48,6 @@ function fill_config {
     readarray -d '' files_to_subst < <(find dovecot postfix vimbadmin -type f -print0)
     for file in "${files_to_subst[@]}"
     do
-        echo "vars" $env_vars
         echo -en "Replacing all variables of $file..."
         envsubst "$(printf '${%s} ' $env_vars)" < $file > $file.tmp
         if [[ "$?" -eq 0 ]]; then

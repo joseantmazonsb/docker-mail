@@ -22,6 +22,8 @@ services:
     restart: always
     env_file:
       - ./mail.env
+    volumes:
+      - "${DATA_PATH}/db:/var/lib/mysql"
     networks:
       back:
         ipv4_address: 10.0.1.2
@@ -38,6 +40,7 @@ services:
       postfix_host: 10.0.1.4
     volumes:
       - "${CERTS_DIR}:${CERTS_DIR}"
+      - "${DATA_PATH}/dovecot:/etc/dovecot"
     ports:
       - "143:143"
       - "993:993"
@@ -60,6 +63,7 @@ services:
     volumes:
       - "/dev/log:/dev/log"
       - "${CERTS_DIR}:${CERTS_DIR}"
+      - "${DATA_PATH}/postfix:/etc/postfix"
     ports:
       - "25:25"
       - "465:465"
@@ -83,7 +87,7 @@ services:
       postfix_host: 10.0.1.4
     volumes:
       - "${CERTS_DIR}:${CERTS_DIR}"
-      - "${INSTALL_PATH}:${INSTALL_PATH}"
+      - "${DATA_PATH}/vimbadmin:/var/www/vimbadmin"
     networks:
       front:
         ipv4_address: 10.0.0.2
