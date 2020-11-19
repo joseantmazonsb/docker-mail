@@ -1,9 +1,11 @@
 FROM ubuntu:18.04
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get -qq update && apt-get -qq install software-properties-common && apt-add-repository ppa:ondrej/php && apt-get -qq update && \
+RUN apt-get -qq update && apt-get -qq install software-properties-common && \
+    apt-add-repository ppa:ondrej/php && apt-get -qq update && \
     apt-get -qq install mcrypt php7.3 php7.3-cgi php7.3-memcache \
     php7.3-json php7.3-mysql libapache2-mod-php7.3 php7.3-mbstring \
-    curl memcached git zip unzip php-zip php-xml php-mbstring mysql-client apache2 php7.3-xml
+    curl memcached git zip unzip php-zip php-xml php-mbstring mysql-client \
+    apache2 php7.3-xml dovecot-core
 RUN echo "Europe/Dublin" > /etc/timezone    
 RUN dpkg-reconfigure -f noninteractive tzdata
 RUN curl -s https://getcomposer.org/installer | php
@@ -23,10 +25,10 @@ COPY apache/000-default.conf /etc/apache2/sites-available
 RUN a2ensite 000-default.conf
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
-COPY config/application.ini $TMP_PATH/application/configs/application.ini
+COPY config/application.ini $TMP_PATH/application/configs/
+COPY config/.htaccess $TMP_PATH/public/
 WORKDIR $INSTALL_PATH
 
 EXPOSE 443
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD apachectl -DFOREGROUND

@@ -2,19 +2,125 @@
 
 # Tags
 info="\e[1m\e[36m[INFO]\e[36m\e[0m"
-warn="\e[1m\e[33m[WARNING]\e[33m\e[0m"
-error="\e[1m\e[31m[ERROR]\e[31m\e[0m"
+warn="\e[1m\e[33m[WARN]\e[33m\e[0m"
+fatal="\e[1m\e[31m[FATAL]\e[31m\e[0m"
 success="\e[1m\e[92m[SUCCESS]\e[92m\e[0m"
 ok="\e[1m\e[32m[OK]\e[32m\e[0m"
-failed="\e[1m\e[91m[FAILED]\e[91m\e[0m"
+error="\e[1m\e[91m[ERR]\e[91m\e[0m"
 
 # Globar vars
+arg1=$1
+arg2=$2
+chainable_args=("-nc" "-nu" )
+clean=1
+unset_env=1
+test_only=0
+show_help=0
 env_file_docker="mail.env"
 env_file_bash="mail.env.bash"
 env_vars=""
+
 # Script
 
 ## Functions
+
+function display_help {
+    echo "Usage: run-mail-server [OPTIONS]"
+    echo "[OPTIONS]"
+    echo -e "\t--no-clean, -nc\t| Don't remove original .dist folders after setup."
+    echo -e "\t--no-unset, -nu\t| Don't unset environmental variables after setup, but display them."
+    echo -e "\t--test, -t\t| Test docker-compose configuration and exit. This also sets -nc option."
+    echo -e "\t--help, -h\t| Display this help and exit."
+}
+
+function array_contains { 
+    local array="$1[@]"
+    local seeking=$2
+    local in=0
+    for element in "${!array}"; do
+        if [[ $element == "$seeking" ]]; then
+            in=1
+            break
+        fi
+    done
+    echo $in
+}
+
+function is_chainable {
+    result=$(array_contains chainable_args $1)
+    echo $result
+}
+
+function check_arg {
+    arg=$1
+    if [[ "$arg" == "-nc" ]]; then
+        clean=0
+    elif [[ "$arg" == "-nu" ]]; then
+        unset_env=0
+    elif [[ "$arg" == "-h" ]]; then
+        show_help=1
+    elif [[ "$arg" == "-t" ]]; then
+        test_only=1
+    else
+        echo -e "$fatal Invalid argument: $arg."
+        display_help
+        exit 1
+    fi
+}
+
+function to_short_arg {
+    pos=$1
+    arg=$2
+    if [[ "$arg" == "-nc" ]] || [[ "$arg" == "-nu" ]] || [[ "$arg" == "-t" ]] || [[ "$arg" == "-h" ]]; then
+        return
+    fi
+
+    if [[ "$arg" == "--no-clean" ]]; then
+        val="-nc"
+    elif [[ "$arg" == "--no-unset" ]]; then
+        val="-nu"
+    elif [[ "$arg" == "--help" ]]; then
+        val="-h"
+    elif [[ "$arg" == "--test" ]]; then
+        val="-t"
+    else
+        echo -e "$fatal Invalid argument: $arg."
+        display_help
+        exit 1
+    fi
+
+    if [[ "$pos" -eq 1 ]]; then
+        arg1=$val
+    elif [[ "$pos" -eq 2 ]]; then
+        arg2=$val
+    else
+        echo -e "$fatal Internal error."
+        exit -1
+    fi
+}
+
+function check_args {
+    if [[ "$#" -gt 2 ]]; then
+        echo -e "$fatal Too many args."
+        display_help
+        exit 1
+    fi
+    if [[ "$#" -gt 0 ]]; then
+        to_short_arg 1 "$1"
+        check_arg "$arg1"
+    fi
+    if [[ "$#" -gt 1 ]]; then
+        to_short_arg 2 "$2"
+        if [[ "$1" != "$2" ]] && [[ $(is_chainable "$1") -eq 1 ]] && [[ $(is_chainable "$2") -eq 1 ]]; then
+            check_arg "$2"
+        else
+            echo -e "$fatal Incompatible args: $1 $2"
+            display_help
+            exit 1
+        fi
+    fi
+    
+}
 
 function set_vars {
     echo -en "$info Temporary exporting sensitive data to environment variables..."
@@ -23,7 +129,7 @@ function set_vars {
     # Parse docker-friendly env vars and make them bash-friendly
     while IFS='=' read -r name value; do
         if [ -z "$value" -o -z "$name" ]; then
-            echo -e "$error Unparsable line!"
+            echo -e "$fatal Unparsable line!"
             exit 1
         fi
         # add quotes around `'`
@@ -36,8 +142,8 @@ function set_vars {
     if [[ "$?" -eq 0 ]]; then
         echo -e " $ok"
     else
-        echo -e " $failed"
-        echo -e "$error Something went wrong. Check $env_file_bash and $env_file_docker."
+        echo -e " $error"
+        echo -e "$fatal Something went wrong. Check $env_file_bash and $env_file_docker."
         exit 1
     fi
 }
@@ -54,8 +160,8 @@ function fill_config {
         mv $file.tmp $file
             echo -e " $ok"
         else
-            echo -e " $failed"
-            echo -e "$error Something went wrong. Check $file."
+            echo -e " $error"
+            echo -e "$fatal Something went wrong. Check $file."
             exit 1
         fi
     done
@@ -71,7 +177,7 @@ function test_config {
     echo -e "$info Testing configuration..."
     docker-compose config
     if [[ "$?" -ne 0 ]]; then
-        echo -e "$error Ups, docker-compose configuration does not seem right. Make sure you fill all variables inside mail.env, and don't quote any of them."
+        echo -e "$fatal Ups, docker-compose configuration does not seem right. Make sure you fill all variables inside mail.env, and don't quote any of them."
         unset_vars
         exit 1
     fi
@@ -79,13 +185,19 @@ function test_config {
 
 function clean_resources {
     echo -e "$info Cleaning resources..."
-    rm -rf dovecot postfix vimbadmin
+    rm -rf dovecot.dist postfix.dist vimbadmin.dist
 }
 
-## Error check
+## Permissions check
 if [[ "$EUID" -ne 0 ]]; then
-   echo -e "$error This script must be run as root." 
+   echo -e "$fatal This script must be run as root." 
    exit 1
+fi
+## Args check
+check_args "$@"
+if [[ "$show_help" -eq 1 ]]; then
+    display_help
+    exit 0
 fi
 ## Export env vars
 set_vars
@@ -95,19 +207,28 @@ cp -a postfix.dist postfix
 cp -a vimbadmin.dist vimbadmin
 ## Test docker-compose configuration
 test_config
-## Replace vimbadmin env ocurrences
-fill_config
-## Run containers using docker-compose
-echo -e "$info Building and running containers..."
-#CERTS_DIR=$CERTS_DIR docker-compose up --detach
-docker-compose up --detach --build
-composeResult=$?
+if [[ "$test_only" -eq 1 ]]; then
+    clean=0
+    composeResult=0
+else
+    ## Replace vimbadmin env ocurrences
+    fill_config
+    ## Run containers using docker-compose
+    echo -e "$info Building and running containers..."
+    #CERTS_DIR=$CERTS_DIR docker-compose up --detach
+    docker-compose up --detach --build
+    composeResult=$?
+fi
 ## Unset ENV vars
-unset_vars
+if [[ "$unset_env" -eq 1 ]]; then
+    unset_vars
+fi
 ## Clean resources
-clean_resources
+if [[ "$clean" -eq 1 ]]; then
+    clean_resources
+fi
 if [[ "$composeResult" -ne 0 ]]; then
-    echo -e "$error docker-compose failed."
+    echo -e "$fatal docker-compose error."
     exit 1
 fi
 echo -e "$success All done!"

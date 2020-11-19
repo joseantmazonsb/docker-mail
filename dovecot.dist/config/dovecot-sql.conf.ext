@@ -79,7 +79,7 @@ connect = host=db_host dbname=$MYSQL_DATABASE user=$MYSQL_USER password=$MYSQL_P
 # http://wiki2.dovecot.org/Authentication/PasswordSchemes
 #
 #default_pass_scheme = MD5
-#default_pass_scheme = PLAIN
+default_pass_scheme = SHA512-CRYPT
 
 # passdb query to retrieve the password. It can return fields:
 #   password - The user's password. This field must be returned.
@@ -113,8 +113,8 @@ connect = host=db_host dbname=$MYSQL_DATABASE user=$MYSQL_USER password=$MYSQL_P
 #  FROM users WHERE username = '%n' AND domain = '%d'
 
 password_query = \
-	SELECT email as user, password \
-	FROM virtual_user \
+	SELECT username as user, password \
+	FROM mailbox \
 	WHERE active = 1
 
 # userdb query to retrieve the user information. It can return fields:
@@ -146,9 +146,9 @@ password_query = \
 # 0 = unlimited
 
 user_query = \
-	SELECT maildir as mail, concat('*:bytes=', quota, 'G') as quota_rule \
-	FROM virtual_user \
-	WHERE email = '%u' AND active = 1
+	SELECT maildir, concat('*:bytes=', quota, 'G') as quota_rule \
+	FROM mailbox \
+	WHERE username = '%u' AND active = 1
 
 # If you wish to avoid two SQL lookups (passdb + userdb), you can use
 # userdb prefetch instead of userdb sql in dovecot.conf. In that case you'll
