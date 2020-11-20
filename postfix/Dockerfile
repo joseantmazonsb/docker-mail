@@ -2,12 +2,12 @@ FROM ubuntu:18.04
 RUN apt-get -qq update
 RUN apt-get -qq install postfix
 
-ENV TMP_PATH "/tmp/postfix"
+ENV REAL_PATH "/mailserver/postfix"
 ENV INSTALL_PATH "/etc/postfix"
 
-RUN mkdir -p ${TMP_PATH}
-RUN mv ${INSTALL_PATH}/* ${TMP_PATH}/
-COPY ./config/* $TMP_PATH/
+RUN mkdir -p ${REAL_PATH}
+RUN mv ${INSTALL_PATH}/* ${REAL_PATH}/
+COPY ./config/* $REAL_PATH/
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 

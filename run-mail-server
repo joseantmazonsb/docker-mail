@@ -6,7 +6,7 @@ warn="\e[1m\e[33m[WARN]\e[33m\e[0m"
 fatal="\e[1m\e[31m[FATAL]\e[31m\e[0m"
 success="\e[1m\e[92m[SUCCESS]\e[92m\e[0m"
 ok="\e[1m\e[32m[OK]\e[32m\e[0m"
-error="\e[1m\e[91m[ERR]\e[91m\e[0m"
+ko="\e[1m\e[91m[KO]\e[91m\e[0m"
 
 # Globar vars
 arg1=$1
@@ -27,9 +27,9 @@ env_vars=""
 function display_help {
     echo "Usage: run-mail-server [OPTIONS]"
     echo "[OPTIONS]"
-    echo -e "\t--no-clean, -nc\t| Don't remove original .dist folders after setup."
-    echo -e "\t--no-unset, -nu\t| Don't unset environmental variables after setup, but display them."
-    echo -e "\t--test, -t\t| Test docker-compose configuration and exit. This also sets -nc option."
+    echo -e "\t--no-clean, -nc\t| Do not remove original .dist folders and files after setup."
+    echo -e "\t--no-unset, -nu\t| Do not unset environmental variables after setup, but display them."
+    echo -e "\t--test, -t\t| Test docker-compose configuration and exit."
     echo -e "\t--help, -h\t| Display this help and exit."
 }
 
@@ -142,7 +142,7 @@ function set_vars {
     if [[ "$?" -eq 0 ]]; then
         echo -e " $ok"
     else
-        echo -e " $error"
+        echo -e " $ko"
         echo -e "$fatal Something went wrong. Check $env_file_bash and $env_file_docker."
         exit 1
     fi
@@ -160,7 +160,7 @@ function fill_config {
         mv $file.tmp $file
             echo -e " $ok"
         else
-            echo -e " $error"
+            echo -e " $ko"
             echo -e "$fatal Something went wrong. Check $file."
             exit 1
         fi
@@ -185,7 +185,7 @@ function test_config {
 
 function clean_resources {
     echo -e "$info Cleaning resources..."
-    rm -rf dovecot.dist postfix.dist vimbadmin.dist
+    find ./ -type d -name *.dist | xargs rm -rf
 }
 
 ## Permissions check
@@ -202,9 +202,13 @@ fi
 ## Export env vars
 set_vars
 ## Prepare folder hierarchy
-cp -a dovecot.dist dovecot
-cp -a postfix.dist postfix
-cp -a vimbadmin.dist vimbadmin
+cp -a dovecot/config.dist dovecot/config 2>/dev/null && \
+cp -a postfix/config.dist postfix/config 2>/dev/null && \
+cp -a vimbadmin/config.dist vimbadmin/config 2>/dev/null
+if [[ "$?" -eq 1 ]]; then
+    echo -e "$warn Missing .dist folders. Current hierarchy will be reused."
+    sleep 2
+fi
 ## Test docker-compose configuration
 test_config
 if [[ "$test_only" -eq 1 ]]; then

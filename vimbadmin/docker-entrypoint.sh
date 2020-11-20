@@ -15,12 +15,11 @@ function create_tables {
         result=$($INSTALL_PATH/bin/doctrine2-cli.php orm:schema-tool:create 2>&1)
         if [[ "$?" -eq 0 ]]; then
             echo " [OK]"
-            rm -rf $TMP_PATH
             return
         else
             echo "$result" | grep -q "Connection refused"
             if [[ "$?" -eq 0 ]]; then
-                echo " [FAILED]"
+                echo " [KO]"
                 echo "[WARN] Connection refused. Retrying in 5 seconds..."
                 let "times_tried++"
                 sleep 5
@@ -29,10 +28,9 @@ function create_tables {
                 if [[ "$?" -eq 0 ]]; then
                     echo " [OK]"
                     echo "[WARN] DB tables already exist."
-                    rm -rf $TMP_PATH
                     return
                 else
-                    echo " [FAILED]"
+                    echo " [KO]"
                     echo "[ERR] Unhandled exception."
                     echo "$result"
                     break
@@ -46,12 +44,12 @@ function create_tables {
 
 function fresh_start {
     echo "[INFO] Preparing for first start..."
-    cp -rp $TMP_PATH/* $INSTALL_PATH/
+    ln -s $REAL_PATH/* $INSTALL_PATH
     create_tables
 }
 
-# Check if tmp path not empty
-if [ "$(ls -A $TMP_PATH)" ]; then
+# Check if install path empty
+if [ ! "$(ls -A $INSTALL_PATH)" ]; then
     fresh_start
 fi
 start_server

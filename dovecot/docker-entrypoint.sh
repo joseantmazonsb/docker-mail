@@ -4,8 +4,7 @@
 
 function fresh_start {
     echo "[INFO] Preparing for first start..."
-    cp -rp $TMP_PATH/* $INSTALL_PATH
-    rm -rf $TMP_PATH
+    ln -s $REAL_PATH/* $INSTALL_PATH
 }
 
 function start_server {
