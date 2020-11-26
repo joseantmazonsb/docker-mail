@@ -2,4 +2,4 @@ user            = $MYSQL_USER
 password        = $MYSQL_PASSWORD
 dbname          = $MYSQL_DATABASE
 hosts           = db_host
-query           = SELECT destination FROM virtual_alias WHERE source='%s'
+query           = SELECT goto FROM alias WHERE address='%s'

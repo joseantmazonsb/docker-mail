@@ -3,4 +3,4 @@ user            = $MYSQL_USER
 password        = $MYSQL_PASSWORD
 dbname          = $MYSQL_DATABASE
 hosts           = db_host
-query           = SELECT 1 FROM virtual_domain WHERE name = '%s'
+query           = SELECT 1 FROM domain WHERE domain = '%s'

@@ -1,5 +1,5 @@
-user            = MYSQL_USER
-password        = MYSQL_PASSWORD
-dbname          = MYSQL_DATABASE
+user            = $MYSQL_USER
+password        = $MYSQL_PASSWORD
+dbname          = $MYSQL_DATABASE
 hosts           = db_host
-query           = SELECT email FROM virtual_user WHERE email='%s'
+query           = SELECT username FROM mailbox WHERE username='%s'

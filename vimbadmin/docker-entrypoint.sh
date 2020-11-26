@@ -4,7 +4,6 @@
 
 function start_server {
     echo "[INFO] Starting server..."
-    ln -sf $INSTALL_PATH $TARGET_PATH
     apachectl -DFOREGROUND
 }
 
@@ -13,7 +12,7 @@ function create_tables {
     times_tried=0
     while [ "$times_tried" -lt "$MAX_TRIES" ]; do
         echo -n "[INFO] Creating DB tables..."
-        result=$($INSTALL_PATH/bin/doctrine2-cli.php orm:schema-tool:create 2>&1)
+        result=$($TARGET_PATH/bin/doctrine2-cli.php orm:schema-tool:create 2>&1)
         if [[ "$?" -eq 0 ]]; then
             echo " [OK]"
             return
@@ -48,8 +47,25 @@ function fresh_start {
     create_tables
 }
 
-# Check if install path empty
-if [ ! "$(ls -A $INSTALL_PATH)" ]; then
+# Copy current configuration (without overwriting) to mounted directory
+cp -rn $TARGET_PATH/* $INSTALL_PATH
+# Delete current configuration
+rm -rf $TARGET_PATH
+# Link configuration located in mounted directory
+ln -sf $INSTALL_PATH $TARGET_PATH
+
+cd $TARGET_PATH
+chown -R www-data: $TARGET_PATH/var
+
+
+# Check if install path contains flag
+flag_file="$INSTALL_PATH/times_started"
+if [ ! -f "$flag_file" ]; then
     fresh_start
+    echo 1 > $flag_file
+else 
+    times_started=$(cat $flag_file)
+    let "times_started++"
+    echo $times_started > $flag_file
 fi
 start_server

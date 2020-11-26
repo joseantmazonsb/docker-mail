@@ -20,6 +20,10 @@ readme_directory = no
 # fresh installs.
 compatibility_level = 2
 
+# Search inside /etc/hosts 
+lmtp_host_lookup = native, dns
+smtp_host_lookup = native, dns
+
 # TLS parameters
 
 #smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem

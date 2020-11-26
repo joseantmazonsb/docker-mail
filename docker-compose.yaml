@@ -17,14 +17,14 @@ networks:
 services:
 
   db:
-    image: "mysql:latest"
+    image: "mariadb:latest"
     container_name: mysql
     command: --default-authentication-plugin=mysql_native_password --bind-address=10.0.1.2
     restart: always
     env_file:
       - ./mail.env
     volumes:
-      - "${DATA_PATH}/db:/var/lib/mysql"
+      - "${DATA_PATH:-/srv/mailserver}/db:/var/lib/mysql"
     networks:
       back:
         ipv4_address: 10.0.1.2
@@ -43,7 +43,7 @@ services:
     container_name: opendkim
     volumes:
       - "/dev/log:/dev/log"
-      - "${DATA_PATH}/opendkim:/mailserver/opendkim"
+      - "${DATA_PATH:-/srv/mailserver}/opendkim:/mailserver/opendkim"
     restart: always
     networks:
       back:
@@ -62,7 +62,7 @@ services:
       postfix_host: 10.0.1.6
     volumes:
       - "${CERTS_DIR}:${CERTS_DIR}"
-      - "${DATA_PATH}/dovecot:/mailserver/dovecot"
+      - "${DATA_PATH:-/srv/mailserver}/dovecot:/mailserver/dovecot"
     ports:
       - "143:143"
       - "993:993"
@@ -87,7 +87,7 @@ services:
     volumes:
       - "/dev/log:/dev/log"
       - "${CERTS_DIR}:${CERTS_DIR}"
-      - "${DATA_PATH}/postfix:/mailserver/postfix"
+      - "${DATA_PATH:-/srv/mailserver}/postfix:/mailserver/postfix"
     ports:
       - "25:25"
       - "465:465"
@@ -113,7 +113,7 @@ services:
       postfix_host: 10.0.1.6
     volumes:
       - "${CERTS_DIR}:${CERTS_DIR}"
-      - "${DATA_PATH}/vimbadmin:/mailserver/vimbadmin"
+      - "${DATA_PATH:-/srv/mailserver}/vimbadmin:/mailserver/vimbadmin"
     networks:
       front:
         ipv4_address: 10.0.0.2
