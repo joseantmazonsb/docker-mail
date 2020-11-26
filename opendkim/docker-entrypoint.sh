@@ -8,5 +8,6 @@ rm -rf $TARGET_PATH
 ln -sf $INSTALL_PATH $TARGET_PATH
 
 chown -R opendkim:opendkim $TARGET_PATH
+ln -sf $TARGET_PATH/opendkim.conf /etc/
 
 opendkim -f
