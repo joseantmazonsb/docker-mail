@@ -7,4 +7,6 @@ rm -rf $TARGET_PATH
 # Link configuration located in mounted directory
 ln -sf $INSTALL_PATH $TARGET_PATH
 
-postfix start-fg
+chown -R opendkim:opendkim $TARGET_PATH
+
+opendkim -f

@@ -1,22 +1,19 @@
 #!/bin/bash
 
-# Functions
+# Copy current configuration (without overwriting) to mounted directory
+cp -rn $TARGET_PATH/* $INSTALL_PATH
+# Delete current configuration
+rm -rf $TARGET_PATH
+# Link configuration located in mounted directory
+ln -sf $INSTALL_PATH $TARGET_PATH
 
-function fresh_start {
-    echo "[INFO] Preparing for first start..."
-    ln -s $REAL_PATH/* $INSTALL_PATH
-}
+# Set permissions
 
-function start_server {
-    echo "[INFO] Starting server..."
-    dovecot -F
-    #tail -f /dev/null
-}
+groupadd -g $VMAIL_GID $VMAIL_GROUP
+useradd -g $VMAIL_GROUP -u $VMAIL_UID $VMAIL_USER -d /var/mail
+chown -R $VMAIL_USER:$VMAIL_GROUP /var/mail
 
-chown -R vmail:dovecot $INSTALL_PATH
-chmod -R o-rwx $INSTALL_PATH
-# Check if install path empty
-if [ ! "$(ls -A $INSTALL_PATH)" ]; then
-    fresh_start
-fi
-start_server
+chown -R $VMAIL_USER:dovecot $TARGET_PATH
+chmod -R o-rwx $TARGET_PATH
+
+dovecot -F

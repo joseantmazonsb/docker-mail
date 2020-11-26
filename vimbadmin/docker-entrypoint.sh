@@ -4,6 +4,7 @@
 
 function start_server {
     echo "[INFO] Starting server..."
+    ln -sf $INSTALL_PATH $TARGET_PATH
     apachectl -DFOREGROUND
 }
 
@@ -44,7 +45,6 @@ function create_tables {
 
 function fresh_start {
     echo "[INFO] Preparing for first start..."
-    ln -s $REAL_PATH/* $INSTALL_PATH
     create_tables
 }
 

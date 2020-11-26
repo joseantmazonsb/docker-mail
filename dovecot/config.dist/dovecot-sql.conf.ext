@@ -115,7 +115,7 @@ default_pass_scheme = SHA512-CRYPT
 password_query = \
 	SELECT username as user, password \
 	FROM mailbox \
-	WHERE active = 1
+	WHERE active = 1 AND username = '%u'
 
 # userdb query to retrieve the user information. It can return fields:
 #   uid - System UID (overrides mail_uid setting)

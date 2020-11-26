@@ -14,10 +14,11 @@ arg2=$2
 chainable_args=("-nc" "-nu" )
 clean=1
 unset_env=1
-test_only=0
 show_help=0
-env_file_docker="mail.env"
-env_file_bash="mail.env.bash"
+basic_env_file_docker="basic.env"
+advanced_env_file_docker="advanced.env"
+tmp_env_file_bash="tmp.env.bash"
+tmp_env_file_docker="tmp.env"
 env_vars=""
 
 # Script
@@ -25,11 +26,10 @@ env_vars=""
 ## Functions
 
 function display_help {
-    echo "Usage: run-mail-server [OPTIONS]"
+    echo "Usage: setup-conf [OPTIONS]"
     echo "[OPTIONS]"
     echo -e "\t--no-clean, -nc\t| Do not remove original .dist folders and files after setup."
-    echo -e "\t--no-unset, -nu\t| Do not unset environmental variables after setup, but display them."
-    echo -e "\t--test, -t\t| Test docker-compose configuration and exit."
+    echo -e "\t--no-unset, -nu\t| Do not unset environmental variables after setup."
     echo -e "\t--help, -h\t| Display this help and exit."
 }
 
@@ -59,8 +59,6 @@ function check_arg {
         unset_env=0
     elif [[ "$arg" == "-h" ]]; then
         show_help=1
-    elif [[ "$arg" == "-t" ]]; then
-        test_only=1
     else
         echo -e "$fatal Invalid argument: $arg."
         display_help
@@ -71,18 +69,15 @@ function check_arg {
 function to_short_arg {
     pos=$1
     arg=$2
-    if [[ "$arg" == "-nc" ]] || [[ "$arg" == "-nu" ]] || [[ "$arg" == "-t" ]] || [[ "$arg" == "-h" ]]; then
+    if [[ "$arg" == "-nc" ]] || [[ "$arg" == "-nu" ]] || [[ "$arg" == "-h" ]]; then
         return
     fi
-
     if [[ "$arg" == "--no-clean" ]]; then
         val="-nc"
     elif [[ "$arg" == "--no-unset" ]]; then
         val="-nu"
     elif [[ "$arg" == "--help" ]]; then
         val="-h"
-    elif [[ "$arg" == "--test" ]]; then
-        val="-t"
     else
         echo -e "$fatal Invalid argument: $arg."
         display_help
@@ -124,8 +119,12 @@ function check_args {
 
 function set_vars {
     echo -en "$info Temporary exporting sensitive data to environment variables..."
-    # Ensure $env_file_bash does not exist
-    rm $env_file_bash 2&> /dev/null
+    # Ensure tmp env files do not exist
+    rm $tmp_env_file_bash 2&> /dev/null
+    rm $tmp_env_file_docker 2&> /dev/null
+    # Create tmp env files
+    cat $basic_env_file_docker > $tmp_env_file_docker
+    cat $advanced_env_file_docker >> $tmp_env_file_docker
     # Parse docker-friendly env vars and make them bash-friendly
     while IFS='=' read -r name value; do
         if [ -z "$value" -o -z "$name" ]; then
@@ -135,22 +134,22 @@ function set_vars {
         # add quotes around `'`
         value=$(<<<"$value" sed "s/'/'\''/g")
         # set variable with name $name to the value $value
-        echo "$name='$value'" >> $env_file_bash 
-    done <$env_file_docker
+        echo "$name='$value'" >> $tmp_env_file_bash 
+    done <$tmp_env_file_docker
     # Export vars
-    export $(xargs <$env_file_bash)
+    export $(xargs <$tmp_env_file_bash)
     if [[ "$?" -eq 0 ]]; then
         echo -e " $ok"
     else
         echo -e " $ko"
-        echo -e "$fatal Something went wrong. Check $env_file_bash and $env_file_docker."
+        echo -e "$fatal Something went wrong. Check .env files."
         exit 1
     fi
 }
 
 function fill_config {
     echo -e "$info Filling files with environment data..."
-    env_vars=$(grep -v '^#' $env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
+    env_vars=$(grep -v '^#' $tmp_env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
     readarray -d '' files_to_subst < <(find dovecot postfix vimbadmin -type f -print0)
     for file in "${files_to_subst[@]}"
     do
@@ -169,8 +168,9 @@ function fill_config {
 
 function unset_vars {
     echo -e "$info Unsetting environment variables..."
-    unset $(grep -v '^#' $env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
-    rm $env_file_bash
+    unset $(grep -v '^#' $tmp_env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
+    rm $tmp_env_file_bash
+    rm $tmp_env_file_docker
 }
 
 function test_config {
@@ -188,6 +188,22 @@ function clean_resources {
     find ./ -type d -name *.dist | xargs rm -rf
 }
 
+function set_dir {
+    folder=$1
+    cp -a $folder.dist $folder 2>/dev/null
+    if [[ "$?" -eq 1 ]]; then
+        echo -e "$warn Missing $folder.dist folder, $folder will be used."
+        sleep 1
+    fi
+}
+
+function set_dirs {
+    set_dir "dovecot/config"
+    set_dir "opendkim/config"
+    set_dir "postfix/config"
+    set_dir "vimbadmin/config"
+}
+
 ## Permissions check
 if [[ "$EUID" -ne 0 ]]; then
    echo -e "$fatal This script must be run as root." 
@@ -202,27 +218,12 @@ fi
 ## Export env vars
 set_vars
 ## Prepare folder hierarchy
-cp -a dovecot/config.dist dovecot/config 2>/dev/null && \
-cp -a postfix/config.dist postfix/config 2>/dev/null && \
-cp -a vimbadmin/config.dist vimbadmin/config 2>/dev/null
-if [[ "$?" -eq 1 ]]; then
-    echo -e "$warn Missing .dist folders. Current hierarchy will be reused."
-    sleep 2
-fi
+set_dirs
+fill_config
+### Rename opendkim/config/keys/example.com to keys/$DOMAIN_NAME
+mv "opendkim/config/keys/example.com" "opendkim/config/keys/$DOMAIN_NAME"
 ## Test docker-compose configuration
 test_config
-if [[ "$test_only" -eq 1 ]]; then
-    clean=0
-    composeResult=0
-else
-    ## Replace vimbadmin env ocurrences
-    fill_config
-    ## Run containers using docker-compose
-    echo -e "$info Building and running containers..."
-    #CERTS_DIR=$CERTS_DIR docker-compose up --detach
-    docker-compose up --detach --build
-    composeResult=$?
-fi
 ## Unset ENV vars
 if [[ "$unset_env" -eq 1 ]]; then
     unset_vars
@@ -231,9 +232,6 @@ fi
 if [[ "$clean" -eq 1 ]]; then
     clean_resources
 fi
-if [[ "$composeResult" -ne 0 ]]; then
-    echo -e "$fatal docker-compose error."
-    exit 1
-fi
+
 echo -e "$success All done!"
 exit 0

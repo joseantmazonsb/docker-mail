@@ -1,8 +1,5 @@
 # See /usr/share/postfix/main.cf.dist for a commented, more complete version
 
-# Logs
-maillog_file=/var/log/postfix.log
-
 # Debian specific:  Specifying a file name will cause the first
 # line of that file to be used as the name.  The Debian default
 # is /etc/mailname.
@@ -96,8 +93,8 @@ inet_protocols = all
 home_mailbox = Maildir/
 
 # Authentication
+smtpd_sasl_path = inet:dovecot_host:$SASL_PORT
 smtpd_sasl_type = dovecot
-smtpd_sasl_path = dovecot_host:$DOVECOT_SASL_PORT
 smtpd_sasl_auth_enable = yes
 
 smtpd_sasl_local_domain = 
@@ -110,7 +107,7 @@ smtp_use_tls = yes
 tls_random_source = dev:/dev/urandom
 
 # Handing off local delivery to Dovecot's LMTP, and telling it where to store mail
-virtual_transport = lmtp:dovecot_host:24
+virtual_transport = lmtp:inet:dovecot_host:$LMTP_PORT
 
 # Virtual domains, users, and aliases
 virtual_mailbox_domains = mysql:/etc/postfix/virtual-mailbox-domains.cf
@@ -120,8 +117,8 @@ virtual_alias_maps = mysql:/etc/postfix/virtual-alias-maps.cf, mysql:/etc/postfi
 # DKIM
 milter_default_action = accept
 milter_protocol = 2
-smtpd_milters = inet:localhost:8892
-non_smtpd_milters = inet:localhost:8892
+smtpd_milters = inet:opendkim_host:$DKIM_PORT
+non_smtpd_milters = inet:opendkim_host:$DKIM_PORT
 
 #smtp_header_checks = regexp:/etc/postfix/header_checks
 
