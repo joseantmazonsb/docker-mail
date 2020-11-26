@@ -11,14 +11,15 @@ ko="\e[1m\e[91m[KO]\e[91m\e[0m"
 # Globar vars
 arg1=$1
 arg2=$2
-chainable_args=("-nc" "-nu" )
-clean=1
+chainable_args=("-c" "-nu" )
+data_path="/srv/mailserver"
+clean=0
 unset_env=1
 show_help=0
 basic_env_file_docker="basic.env"
 advanced_env_file_docker="advanced.env"
-tmp_env_file_bash="tmp.env.bash"
-tmp_env_file_docker="tmp.env"
+mail_env_file_bash="mail.env.bash"
+mail_env_file_docker="mail.env"
 env_vars=""
 
 # Script
@@ -28,7 +29,8 @@ env_vars=""
 function display_help {
     echo "Usage: setup-conf [OPTIONS]"
     echo "[OPTIONS]"
-    echo -e "\t--no-clean, -nc\t| Do not remove original .dist folders and files after setup."
+    echo -e "\t--data-path, -d\t| Set the folder where all config files will be placed (default is /srv/mailserver)."
+    echo -e "\t--clean, -c\t| Remove original .dist folders and files after setup."
     echo -e "\t--no-unset, -nu\t| Do not unset environmental variables after setup."
     echo -e "\t--help, -h\t| Display this help and exit."
 }
@@ -53,8 +55,8 @@ function is_chainable {
 
 function check_arg {
     arg=$1
-    if [[ "$arg" == "-nc" ]]; then
-        clean=0
+    if [[ "$arg" == "-c" ]]; then
+        clean=1
     elif [[ "$arg" == "-nu" ]]; then
         unset_env=0
     elif [[ "$arg" == "-h" ]]; then
@@ -69,11 +71,11 @@ function check_arg {
 function to_short_arg {
     pos=$1
     arg=$2
-    if [[ "$arg" == "-nc" ]] || [[ "$arg" == "-nu" ]] || [[ "$arg" == "-h" ]]; then
+    if [[ "$arg" == "-c" ]] || [[ "$arg" == "-nu" ]] || [[ "$arg" == "-h" ]]; then
         return
     fi
-    if [[ "$arg" == "--no-clean" ]]; then
-        val="-nc"
+    if [[ "$arg" == "--clean" ]]; then
+        val="-c"
     elif [[ "$arg" == "--no-unset" ]]; then
         val="-nu"
     elif [[ "$arg" == "--help" ]]; then
@@ -120,11 +122,11 @@ function check_args {
 function set_vars {
     echo -en "$info Temporary exporting sensitive data to environment variables..."
     # Ensure tmp env files do not exist
-    rm $tmp_env_file_bash 2&> /dev/null
-    rm $tmp_env_file_docker 2&> /dev/null
+    rm $mail_env_file_bash 2&> /dev/null
+    rm $mail_env_file_docker 2&> /dev/null
     # Create tmp env files
-    cat $basic_env_file_docker > $tmp_env_file_docker
-    cat $advanced_env_file_docker >> $tmp_env_file_docker
+    cat $basic_env_file_docker > $mail_env_file_docker
+    cat $advanced_env_file_docker >> $mail_env_file_docker
     # Parse docker-friendly env vars and make them bash-friendly
     while IFS='=' read -r name value; do
         if [ -z "$value" -o -z "$name" ]; then
@@ -134,10 +136,10 @@ function set_vars {
         # add quotes around `'`
         value=$(<<<"$value" sed "s/'/'\''/g")
         # set variable with name $name to the value $value
-        echo "$name='$value'" >> $tmp_env_file_bash 
-    done <$tmp_env_file_docker
+        echo "$name='$value'" >> $mail_env_file_bash 
+    done <$mail_env_file_docker
     # Export vars
-    export $(xargs <$tmp_env_file_bash)
+    export $(xargs <$mail_env_file_bash)
     if [[ "$?" -eq 0 ]]; then
         echo -e " $ok"
     else
@@ -149,8 +151,8 @@ function set_vars {
 
 function fill_config {
     echo -e "$info Filling files with environment data..."
-    env_vars=$(grep -v '^#' $tmp_env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
-    readarray -d '' files_to_subst < <(find dovecot postfix vimbadmin -type f -print0)
+    env_vars=$(grep -v '^#' $mail_env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
+    readarray -d '' files_to_subst < <(find $data_path/dovecot $data_path/postfix $data_path/vimbadmin $data_path/opendkim -type f -print0)
     for file in "${files_to_subst[@]}"
     do
         echo -en "Replacing all variables of $file..."
@@ -168,19 +170,9 @@ function fill_config {
 
 function unset_vars {
     echo -e "$info Unsetting environment variables..."
-    unset $(grep -v '^#' $tmp_env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
-    rm $tmp_env_file_bash
-    rm $tmp_env_file_docker
-}
-
-function test_config {
-    echo -e "$info Testing configuration..."
-    docker-compose config
-    if [[ "$?" -ne 0 ]]; then
-        echo -e "$fatal Ups, docker-compose configuration does not seem right. Make sure you fill all variables inside mail.env, and don't quote any of them."
-        unset_vars
-        exit 1
-    fi
+    unset $(grep -v '^#' $mail_env_file_bash | sed -E 's/(.*)=.*/\1/' | xargs)
+    rm $mail_env_file_bash
+    #rm $mail_env_file_docker
 }
 
 function clean_resources {
@@ -189,19 +181,36 @@ function clean_resources {
 }
 
 function set_dir {
-    folder=$1
-    cp -a $folder.dist $folder 2>/dev/null
+    source="$1/config.dist"
+    target="$data_path/$1"
+    rm -rf $target 2>/dev/null
+    mkdir -p $target
+    cp -Rp $source/* $target
     if [[ "$?" -eq 1 ]]; then
-        echo -e "$warn Missing $folder.dist folder, $folder will be used."
-        sleep 1
+        echo -e "$fatal Unable to copy $source into $target!"
+        unset_vars
+        exit 1
     fi
 }
 
 function set_dirs {
-    set_dir "dovecot/config"
-    set_dir "opendkim/config"
-    set_dir "postfix/config"
-    set_dir "vimbadmin/config"
+    set_dir "dovecot"
+    set_dir "opendkim"
+    set_dir "postfix"
+    set_dir "vimbadmin"
+    ### Rename opendkim/config/keys/example.com to keys/$DOMAIN_NAME
+    mv "$data_path/opendkim/keys/example.com" "$data_path/opendkim/keys/$DOMAIN_NAME"
+    fill_config
+}
+
+function test_config {
+    echo -e "$info Testing configuration..."
+    docker-compose config
+    if [[ "$?" -ne 0 ]]; then
+        echo -e "$fatal Ups, docker-compose configuration does not seem right. Make sure you fill all variables inside basic.env and advanced.env, and don't quote any of them."
+        unset_vars
+        exit 1
+    fi
 }
 
 ## Permissions check
@@ -219,9 +228,6 @@ fi
 set_vars
 ## Prepare folder hierarchy
 set_dirs
-fill_config
-### Rename opendkim/config/keys/example.com to keys/$DOMAIN_NAME
-mv "opendkim/config/keys/example.com" "opendkim/config/keys/$DOMAIN_NAME"
 ## Test docker-compose configuration
 test_config
 ## Unset ENV vars
@@ -233,5 +239,5 @@ if [[ "$clean" -eq 1 ]]; then
     clean_resources
 fi
 
-echo -e "$success All done!"
+echo -e "$success All done! Your configuration files are located under $data_path."
 exit 0

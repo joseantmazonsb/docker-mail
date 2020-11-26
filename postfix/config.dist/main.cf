@@ -110,9 +110,9 @@ tls_random_source = dev:/dev/urandom
 virtual_transport = lmtp:inet:dovecot_host:$LMTP_PORT
 
 # Virtual domains, users, and aliases
-virtual_mailbox_domains = mysql:/etc/postfix/virtual-mailbox-domains.cf
-virtual_mailbox_maps = mysql:/etc/postfix/virtual-mailbox-maps.cf
-virtual_alias_maps = mysql:/etc/postfix/virtual-alias-maps.cf, mysql:/etc/postfix/virtual-email2email.cf
+virtual_mailbox_domains = mysql:/etc/postfix/sql/virtual-mailbox-domains.cf
+virtual_mailbox_maps = mysql:/etc/postfix/sql/virtual-mailbox-maps.cf
+virtual_alias_maps = mysql:/etc/postfix/sql/virtual-alias-maps.cf, mysql:/etc/postfix/sql/virtual-email2email.cf
 
 # DKIM
 milter_default_action = accept
