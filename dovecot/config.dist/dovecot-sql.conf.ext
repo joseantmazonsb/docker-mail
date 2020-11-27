@@ -146,7 +146,7 @@ password_query = \
 # 0 = unlimited
 
 user_query = \
-	SELECT maildir, concat('*:bytes=', quota, 'G') as quota_rule \
+	SELECT username as user, home, maildir, concat('*:bytes=', quota, 'G') as quota_rule, uid, gid \
 	FROM mailbox \
 	WHERE username = '%u' AND active = 1
 

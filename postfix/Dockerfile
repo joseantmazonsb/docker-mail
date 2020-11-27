@@ -5,6 +5,8 @@ RUN apt-get -qq update \
 ENV INSTALL_PATH "/mailserver/postfix"
 ENV TARGET_PATH "/etc/postfix"
 
+RUN ln -snf /etc/services /var/spool/postfix/etc/services
+
 WORKDIR $TARGET_PATH
 
 COPY docker-entrypoint.sh /
