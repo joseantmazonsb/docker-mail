@@ -12,8 +12,6 @@ ln -sf $INSTALL_PATH $TARGET_PATH
 groupadd -g $VMAIL_GID $VMAIL_GROUP
 useradd -g $VMAIL_GROUP -u $VMAIL_UID $VMAIL_USER -d /var/mail
 chown -R $VMAIL_USER:$VMAIL_GROUP /var/mail
-
-chown -R $VMAIL_USER:dovecot $TARGET_PATH
 chmod -R o-rwx $TARGET_PATH
 
 dovecot -F

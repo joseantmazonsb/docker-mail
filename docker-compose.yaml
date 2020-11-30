@@ -63,6 +63,7 @@ services:
     volumes:
       - "${CERTS_DIR}:${CERTS_DIR}"
       - "${DATA_PATH:-/srv/mailserver}/dovecot:/mailserver/dovecot"
+      - "${MAILDIR_PATH:-/srv/mailserver/maildirs}:/var/mail/vhosts"
     ports:
       - "143:143"
       - "993:993"

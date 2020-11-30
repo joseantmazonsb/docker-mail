@@ -24,8 +24,8 @@ passdb {
 # by using userdb static instead of userdb sql, for example:
 # <doc/wiki/UserDatabase.Static.txt>
 userdb {
-  driver = static
-  args = uid=vmail gid=vmail home=/var/vmail/vhosts/%d/%n
-  #driver = sql
-  #args = /etc/dovecot/dovecot-sql.conf.ext
+  #driver = static
+  #args = uid=vmail gid=vmail home=/var/vmail/vhosts/%d/%n
+  driver = sql
+  args = /etc/dovecot/dovecot-sql.conf.ext
 }

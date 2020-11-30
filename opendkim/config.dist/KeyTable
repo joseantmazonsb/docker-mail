@@ -1,1 +1,1 @@
-mail._domainkey.$DOMAIN_NAME $DOMAIN_NAME:mail:/etc/opendkim/keys/$DOMAIN_NAME/mail.private
+mail._domainkey.$DOMAIN_NAME $DOMAIN_NAME:mail:/etc/dkimkeys/$DOMAIN_NAME/mail.private

@@ -23,4 +23,6 @@ ln -sf $INSTALL_PATH $TARGET_PATH
 # This little hack makes thing possible:
 hook_postfix
 
+cp /etc/resolv.conf /var/spool/postfix/etc/resolv.conf
+cp /etc/services /var/spool/postfix/etc/services
 postfix start-fg
