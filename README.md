@@ -2,9 +2,21 @@
 
 A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via ViMbAdmin.
 
-# How many custom docker images are there?
+# Key features
 
-Four. I used custom images for Dovecot, Opendkim, Postfix and ViMbAdmin. However, both the database and Memcached use images provided by official sources.
+The main goal of this project is to offer a complete dockerized IMAP/SMTP server which supports virtual mailboxes, aliases, quotas, etc, and a GUI to manage it all.
+
+The following table serves as a summary of the current state of things:
+
+| Component | Current status |
+|-|-|
+| IMAP server (Dovecot) | Working |
+| SMTP server (Postfix) | Working |
+| Web administration (ViMbAdmin) | Working |
+| Spam blocker (Spam-assasin) | Planned |
+| Webmail | Future |
+
+Virtual stuff is powered by Mariadb (MySQL works too) and postfix is managed through ViMbAdmin. Memcached is recommended.
 
 # Prerequisites
 
@@ -52,14 +64,14 @@ Now, here comes the funny part, and it's actually quite simple.
     ```
     This means you can change the `DATA_PATH` folder, but it's inner structure must remain intact: dovecot files must go inside dovecot folder, postfix files must be located inside postfix folder, and so on.
 
-    You can also change where mail related files are going to be stored (`/srv/mailserver/maildir` by default) by using `-m` option.
+    Moreover, you can also change the location of the mail directory (`/srv/mailserver/maildir` by default) using `-m` option.
 
 7. Put your DKIM private and public keys inside `/srv/mailserver/opendkim/keys`.
 8. Run `CERTS_DIR=your/certs/dir docker-compose up -d`.
 
 # Customization
 
-The main goal of this project is to provide a quick way to set up a mail server for unexperienced users. However, you are free to make as many changes as you wish, and this section is meant to be an introductory guide for you to make some of these changes.
+This project is primarily oriented to users with few experience or people who like simple, plug and play stuff. However, you are free to make as many changes as you wish, and this section is meant to be an introductory guide for you to make some of these changes.
 
 ## I already have configuration files, I just want docker (please)
 
@@ -75,11 +87,22 @@ Sure thing. The name of the folders (`DATA_PATH/dovecot`, `DATA_PATH/postfix`...
 
 If you don't have a wildcard certificate or you just want to use different certificates for different services, you will probably want to use several `CERTS_DIR` variables, so you can do `${DOV_CERTS_DIR}` for dovecot, `${PFIX_CERTS_DIR}` for postfix, etc. Of course, if you use variables inside the `docker-compose.yaml` file, make sure you give them value when running `docker-compose`, just like we did before.
 
+## Environment files
+
+### Basic
+
+### Advanced
+
+## Reverse proxy
+
+### Apache
+
 # Further steps
 
 - Replace Apache with lighttpd (vimbadmin).
 - Add spamassasin container.
 - Add webmail.
+- Reverse proxy with nginx.
 
 # Known issues
 

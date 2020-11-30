@@ -62,8 +62,8 @@ services:
       postfix_host: 10.0.1.6
     volumes:
       - "${CERTS_DIR}:${CERTS_DIR}"
-      - "${DATA_PATH:-/srv/mailserver}/dovecot:/mailserver/dovecot"
-      - "${MAILDIR_PATH:-/srv/mailserver/maildirs}:/var/mail/vhosts"
+      - "${DATA_PATH:-/srv/mailserver}/dovecot:/mailserver/do vecot"
+      - "${MAILDIR_PATH:-/srv/mailserver/maildir}:/var/mail/vhosts"
     ports:
       - "143:143"
       - "993:993"
