@@ -1,6 +1,6 @@
 # What is this?
 
-A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via ViMbAdmin.
+A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via [ViMbAdmin](https://www.vimbadmin.net/).
 
 # Key features
 
@@ -13,19 +13,16 @@ The following table serves as a summary of the current state of things:
 | IMAP server (Dovecot) | Working |
 | SMTP server (Postfix) | Working |
 | Web administration (ViMbAdmin) | Working |
-| Spam blocker (Spam-assasin) | Planned |
-| Webmail | Future |
-
-Virtual stuff is powered by Mariadb (MySQL works too) and postfix is managed through ViMbAdmin. Memcached is recommended.
+| Spam blocker (SpamAssassin) | Planned |
+| Webmail client | Future |
 
 # Prerequisites
 
 First of all:
 
-- You will need to place TXT records in your DNS for SPF, DMARC and DKIM (so google, microsoft and everybody like your emails).
-- You will need a wildcard certificate (valid for *.example.com, for instance). If you are to use different certificates for one or more services, you will need to edit the `docker-compose.yaml` file to reflect it. More about this in [Customization](#customization).
-
-- This work is meant to **use SSL/TLS features**. Of course, you may just ignore this, download the source files and make any changes you want, but I highly disencourage disabling SSL/TLS.
+- I assume you know about SPF, DKIM and DMARC. If you don't, you should [check out any online guide](https://www.esecurityplanet.com/applications/how-to-set-up-and-implement-dmarc-email-security/) about it. You will need to place TXT records in your DNS for SPF, DMARC and DKIM, so everybody takes you seriously and your emails are not marked as spam. If you are in a hurry, you can just fill the templates I provide in section [DNS records](#DNS-records).
+- You should **use SSL/TLS features**. Of course, you may just ignore this, download the source files and make any changes you need, but I highly disencourage disabling SSL/TLS unless you're just testing stuff.
+- You will need a wildcard certificate (valid for `*.example.com`, for instance). If you are to use different certificates for one or more services, you will need to edit the `docker-compose.yaml` file to reflect it. More about this in [Customization](#customization).
 
 # Basic installation
 
@@ -36,7 +33,7 @@ Now, here comes the funny part, and it's actually quite simple.
 3. Enter the root folder of the project.
 4. Copy .env.dist files to .env (`cp basic.env.dist basic.env; cp advanced.env.dist advanced.env`) and fill them in a way that suit your needings. 
 
-    *Note: default values for `advanced.env.dist` are perfectly valid and may be leaved unchanged*.
+    *Note: default values for `advanced.env.dist` are perfectly valid and may remain unchanged*.
 5. Open `setup-conf` and check that my script does not erase / (it does not, but you should always **check what you are about to execute**).
 6. Run `./setup-conf`. You may specify the folder which will contain all configuration files (it should be the same as the `DATA_PATH` variable's value inside `docker-compose.yaml`) using `-d` option. Default value is `/srv/mailserver`, so configuration files are stored like:
     ```
@@ -69,6 +66,35 @@ Now, here comes the funny part, and it's actually quite simple.
 7. Put your DKIM private and public keys inside `/srv/mailserver/opendkim/keys`.
 8. Run `CERTS_DIR=your/certs/dir docker-compose up -d`.
 
+# DNS records
+
+You will need to place TXT records in your DNS for SPF, DMARC and DKIM, so everybody takes you seriously and your emails are not marked as spam. 
+
+In case you are in a hurry, I provide a template for every record so you can just fill them up and upload them. However, I recommend doing a little research to make your records fit your exact needings.
+
+## SPF
+
+You can make the TXT entry `example.com` return
+
+```
+v=spf1 mx a ~all
+```
+
+## DKIM
+
+You can make the TXT entry `mail._domainkey.example.com` return
+
+```
+v=DKIM1;h=sha256;k=rsa;t=y;p=<dkim_public_key>
+```
+
+## DMARC
+
+You can make the TXT entry `_dmarc.example.com` return
+
+```
+v=DMARC1; adkim=r; pct=100; rf=afrf; fo=1;p=quarantine; rua=mailto:admin@example.com; ruf=mailto:admin@example.com;
+```
 # Customization
 
 This project is primarily oriented to users with few experience or people who like simple, plug and play stuff. However, you are free to make as many changes as you wish, and this section is meant to be an introductory guide for you to make some of these changes.
@@ -81,7 +107,7 @@ If you have your own configuration files for one or more services, that's okay, 
 
 ## I want to use a different folder hierarchy for my files
 
-Sure thing. The name of the folders (`DATA_PATH/dovecot`, `DATA_PATH/postfix`...) does not matter as long as you indicate all of them correctly inside `docker-compose.yaml` file. If you placed dovecot files within `DATA_PATH/dov`, you will need to change `${DATA_PATH}/dovecot` to `${DATA_PATH}/dov` in `docker-compose.yaml`. 
+Sure thing. The name of the folders (`DATA_PATH/dovecot`, `DATA_PATH/postfix`...) does not matter as long as you indicate all of them correctly inside `docker-compose.yaml` file. For instance, if you placed dovecot files within `DATA_PATH/dov`, you will need to change `${DATA_PATH}/dovecot` to `${DATA_PATH}/dov` in `docker-compose.yaml`. 
 
 ## Certificates
 
