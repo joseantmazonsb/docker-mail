@@ -11,7 +11,7 @@ RUN dpkg-reconfigure -f noninteractive tzdata
 RUN curl -s https://getcomposer.org/installer | php
 RUN mv composer.phar /usr/local/bin/composer
 
-ENV INSTALL_PATH "/mailserver/vimbadmin"
+ENV INSTALL_PATH "/config/vimbadmin"
 ENV TARGET_PATH "/var/www/vimbadmin"
 
 RUN a2enmod rewrite ssl env php7.4

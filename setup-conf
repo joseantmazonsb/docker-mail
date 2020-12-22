@@ -198,8 +198,8 @@ function set_dirs {
     set_dir "opendkim"
     set_dir "postfix"
     set_dir "vimbadmin"
-    ### Rename opendkim/config/keys/example.com to keys/$DOMAIN_NAME
-    mv "$data_path/opendkim/keys/example.com" "$data_path/opendkim/keys/$DOMAIN_NAME"
+    ### Rename opendkim/config/keys/example.com to keys/example.com
+    mv "$data_path/opendkim/keys/example.com" "$data_path/opendkim/keys/example.com"
     fill_config
 }
 

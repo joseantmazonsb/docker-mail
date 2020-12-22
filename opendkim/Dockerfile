@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 RUN apt-get -qq update && apt-get -qq install opendkim opendkim-tools
 
-ENV INSTALL_PATH "/mailserver/opendkim"
+ENV INSTALL_PATH "/config/opendkim"
 ENV TARGET_PATH "/etc/opendkim"
 
 RUN mkdir -p "${TARGET_PATH}/keys"

@@ -26,9 +26,9 @@ compatibility_level = 2
 
 # Common
 
-mydomain = $DOMAIN_NAME
-myorigin = $DOMAIN_NAME
-myhostname = smtp.$DOMAIN_NAME
+mydomain = example.com
+myorigin = example.com
+myhostname = smtp.example.com
 alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydestination =
@@ -46,8 +46,8 @@ smtp_tcp_port = 25
 tls_random_source = dev:/dev/urandom
 ## SMTP from your server to others
 smtp_use_tls = yes
-smtp_tls_cert_file = $CERTS_DIR/fullchain.pem
-smtp_tls_key_file = $CERTS_DIR/privkey.pem
+smtp_tls_cert_file = /ssl/ssl.crt
+smtp_tls_key_file = /ssl/ssl.key
 smtp_tls_security_level = may
 smtp_tls_note_starttls_offer = yes
 smtp_tls_mandatory_protocols=!SSLv2,!SSLv3,!TLSv1
@@ -56,8 +56,8 @@ smtp_tls_loglevel = 1
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 ## SMTP from other servers to yours
 smtpd_use_tls = yes
-smtpd_tls_cert_file = $CERTS_DIR/fullchain.pem
-smtpd_tls_key_file = $CERTS_DIR/privkey.pem
+smtpd_tls_cert_file = /ssl/ssl.crt
+smtpd_tls_key_file = /ssl/ssl.key
 smtpd_tls_security_level = may
 smtpd_tls_auth_only = yes
 smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3,!TLSv1
@@ -101,12 +101,12 @@ smtpd_client_restrictions =
 
 milter_default_action = accept
 milter_protocol = 2
-smtpd_milters = inet:opendkim_host:$DKIM_PORT
-non_smtpd_milters = inet:opendkim_host:$DKIM_PORT
+smtpd_milters = inet:opendkim_host:8891
+non_smtpd_milters = inet:opendkim_host:8891
 
 # SASL
 
-smtpd_sasl_path = inet:dovecot_host:$SASL_PORT
+smtpd_sasl_path = inet:dovecot_host:12345
 smtpd_sasl_type = dovecot
 smtpd_sasl_auth_enable = yes
 smtpd_sasl_local_domain = 
@@ -123,7 +123,7 @@ virtual_mailbox_domains = mysql:/etc/postfix/sql/virtual-mailbox-domains.cf
 virtual_mailbox_maps = mysql:/etc/postfix/sql/virtual-mailbox-maps.cf
 virtual_alias_maps = mysql:/etc/postfix/sql/virtual-alias-maps.cf, mysql:/etc/postfix/sql/virtual-email2email.cf
 ## Handing off local delivery to Dovecot's LMTP, and telling it where to store mail
-virtual_transport = lmtp:inet:dovecot_host:$LMTP_PORT
+virtual_transport = lmtp:inet:dovecot_host:24
 
 # Even more Restrictions and MTA params
 

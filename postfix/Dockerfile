@@ -2,7 +2,7 @@ FROM ubuntu:latest
 RUN apt-get -qq update \
     && apt-get -qq install postfix postfix-mysql
 
-ENV INSTALL_PATH "/mailserver/postfix"
+ENV INSTALL_PATH "/config/postfix"
 ENV TARGET_PATH "/etc/postfix"
 
 RUN ln -snf /etc/services /var/spool/postfix/etc/services
