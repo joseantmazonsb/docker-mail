@@ -1,6 +1,6 @@
 # virtual_mailbox_domains.cf
-user            = $MYSQL_USER
-password        = $MYSQL_PASSWORD
-dbname          = $MYSQL_DATABASE
+user            = vimbadmin
+password        = 1234
+dbname          = vimbadmin
 hosts           = db_host
 query           = SELECT 1 FROM domain WHERE domain = '%s'

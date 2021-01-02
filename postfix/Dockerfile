@@ -2,12 +2,14 @@ FROM ubuntu:latest
 RUN apt-get -qq update \
     && apt-get -qq install postfix postfix-mysql
 
-ENV INSTALL_PATH "/config/postfix"
-ENV TARGET_PATH "/etc/postfix"
+ENV EXPORTED_PATH "/config"
+ENV INNER_PATH "/etc/postfix"
+
+RUN mkdir -p ${INNER_PATH}/sql
+COPY config/sql/* ${INNER_PATH}/sql/
+COPY config/*.cf ${INNER_PATH}/
 
 RUN ln -snf /etc/services /var/spool/postfix/etc/services
-
-WORKDIR $TARGET_PATH
 
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh

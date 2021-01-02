@@ -1,12 +1,15 @@
 #!/bin/bash
 
 function set_conf {
-    # Copy current configuration (without overwriting) to mounted directory
-    cp -rn $TARGET_PATH/* $INSTALL_PATH
-    # Delete current configuration
-    rm -rf $TARGET_PATH
-    # Link configuration located in mounted directory
-    ln -sf $INSTALL_PATH $TARGET_PATH
+    shopt -s dotglob # Consider hidden files (.files)
+    cp -rn $INNER_PATH/* $EXPORTED_PATH
+    rm -rf $INNER_PATH
+    ln -sf $EXPORTED_PATH $INNER_PATH
+}
+
+function set_permissions {
+    chmod -R o-rwx $INNER_PATH
+    chown -R vmail:vmail /var/mail
 }
 
 function replace_by_regex {
@@ -27,23 +30,21 @@ function set_secrets {
     mysql_user=$(cat $mysql_user_file | head -1)
     mysql_pwd=$(cat $mysql_pwd_file | head -1)
 
-    files_affected=("$TARGET_PATH/dovecot-sql.conf.ext")
+    file="$INNER_PATH/dovecot-sql.conf.ext"
 
-    for file in "${files_affected[@]}"; do
-        regex="(dbname=)[^\\s]+"
-        replace_by_regex $regex $mysql_db $file_affected
+    regex="(dbname=)\S+"
+    replace_by_regex $regex $mysql_db $file
 
-        regex="(user=)[^\\s]+"
-        replace_by_regex $regex $mysql_user $file_affected
+    regex="(user=)\S+"
+    replace_by_regex $regex $mysql_user $file
 
-        regex="(password=)[^\\s]+"
-        replace_by_regex $regex $mysql_pwd $file_affected
-    done
+    regex="(password=)\S+"
+    replace_by_regex $regex $mysql_pwd $file
 }
 
 function set_new_domain_name {    
     old_name="example.com"
-    domain_file="/.domain_name"
+    domain_file="$EXPORTED_PATH/.domain_name"
     if [ -f $domain_file ]; then
         contents=$(cat $domain_file)
         if [ "$contents" != "" ]; then
@@ -53,17 +54,20 @@ function set_new_domain_name {
 
     new_name="$DOMAIN_NAME"
 
-    files_affected=("$TARGET_PATH/dovecot-sql.conf.ext" "$TARGET_PATH/conf.d/10-mail.conf")
-    for file in "${files_affected[@]}"; do
+    files_affected=("$EXPORTED_PATH/dovecot-sql.conf.ext" "$EXPORTED_PATH/conf.d/10-mail.conf")
+    for file in "${files_affected[@]}"
+    do
         sed -i "s/$old_name/$new_name/g" $file
     done
     echo $new_name > $domain_file
 }
 
 function start {
-    set_conf
+    echo "[INFO] Starting server..."
     set_secrets
-    set_domain_name
+    set_conf
+    set_permissions
+    set_new_domain_name
     dovecot -F    
 }
 

@@ -27,8 +27,8 @@ compatibility_level = 2
 # Common
 
 mydomain = example.com
-myorigin = example.com
-myhostname = smtp.example.com
+myorigin = $mydomain
+myhostname = smtp.$mydomain
 alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydestination =

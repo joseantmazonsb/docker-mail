@@ -18,13 +18,13 @@ services:
 
   db:
     image: "mariadb:latest"
-    container_name: mysql
+    container_name: mailserver-db
     command: --default-authentication-plugin=mysql_native_password --bind-address=10.0.1.2
     restart: always
     env_file:
       - db.env
     volumes:
-      - "${DB_FILES:-/srv/mailserver}/db:/var/lib/mysql"
+      - "${DB_FILES:-/srv/mailserver/db}:/var/lib/mysql"
     networks:
       back:
         ipv4_address: 10.0.1.2
@@ -36,7 +36,7 @@ services:
 
   memcached:
     image: "memcached:latest"
-    container_name: memcached
+    container_name: mailserver-memcached
     networks:
       back:
         ipv4_address: 10.0.1.3
@@ -45,12 +45,13 @@ services:
     image: opendkim
     build:
       context: opendkim
-    container_name: opendkim
-    environment: 
-      - DOMAIN_NAME=example.com
+    container_name: mailserver-opendkim
+    env_file: 
+      - mail.env
     volumes:
       - "/dev/log:/dev/log"
-      - "${OPENDKIM_FILES:-/srv/mailserver/opendkim:/config/opendkim"
+      - "${OPENDKIM_FILES:-/srv/mailserver/opendkim}:/config"
+      - "${DKIM_PRIVKEY:-/ssl/dkim.key}:/etc/dkimkeys/dkim.key"
     restart: always
     networks:
       back:
@@ -60,18 +61,19 @@ services:
     image: "dovecot:latest"
     build:
       context: dovecot
-    container_name: dovecot
+    container_name: mailserver-dovecot
     restart: always
     env_file:
       - db.env
+      - mail.env
     extra_hosts:
       db_host: 10.0.1.2
       postfix_host: 10.0.1.6
     volumes:
       - "${DOVECOT_CRT:-/ssl/ssl.crt}:/ssl/ssl.crt"
       - "${DOVECOT_KEY:-/ssl/ssl.key}:/ssl/ssl.key"
-      - "${DOVECOT_FILES:-/srv/mailserver/dovecot}:/config/dovecot"
-      - "${MAILDIR:-${DOVECOT_FILES}/maildir}:/var/mail/vhosts"
+      - "${DOVECOT_FILES:-/srv/mailserver/dovecot}:/config"
+      - "${MAILDIR:-/srv/mailserver/dovecot/maildir}:/var/mail/vhosts"
     ports:
       - "143:143"
       - "993:993"
@@ -89,12 +91,11 @@ services:
     image: "postfix:latest"
     build:
       context: postfix
-    container_name: postfix
+    container_name: mailserver-postfix
     restart: always
-    environment: 
-      - DOMAIN_NAME=example.com
     env_file:
       - db.env
+      - mail.env
     extra_hosts:
       db_host: 10.0.1.2
       opendkim_host: 10.0.1.4
@@ -103,7 +104,7 @@ services:
       - "/dev/log:/dev/log"
       - "${POSTFIX_CRT:-/ssl/ssl.crt}:/ssl/ssl.crt"
       - "${POSTFIX_KEY:-/ssl/ssl.key}:/ssl/ssl.key"
-      - "${POSTFIX_FILES:-/srv/mailserver/postfix}:/config/postfix"
+      - "${POSTFIX_FILES:-/srv/mailserver/postfix}:/config"
     ports:
       - "25:25"
       - "465:465"
@@ -122,12 +123,11 @@ services:
     image: "vimbadmin:latest"
     build:
       context: vimbadmin
-    container_name: vimbadmin
+    container_name: mailserver-vimbadmin
     restart: always
-    environment: 
-      - DOMAIN_NAME=example.com
     env_file:
       - db.env
+      - mail.env
     extra_hosts:
       db_host: 10.0.1.2
       memcached_host: 10.0.1.3
@@ -136,7 +136,9 @@ services:
     volumes:
       - "${VIMBADMIN_CRT:-/ssl/ssl.crt}:/ssl/ssl.crt"
       - "${VIMBADMIN_KEY:-/ssl/ssl.key}:/ssl/ssl.key"
-      - "${VIMBADMIN_FILES:-/srv/mailserver/vimbadmin}:/config/vimbadmin"
+      - "${VIMBADMIN_FILES:-/srv/mailserver/vimbadmin}:/config"
+    ports: 
+      - "8443:443"
     networks:
       front:
         ipv4_address: 10.0.0.2

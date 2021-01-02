@@ -11,18 +11,21 @@ RUN dpkg-reconfigure -f noninteractive tzdata
 RUN curl -s https://getcomposer.org/installer | php
 RUN mv composer.phar /usr/local/bin/composer
 
-ENV INSTALL_PATH "/config/vimbadmin"
-ENV TARGET_PATH "/var/www/vimbadmin"
+ENV EXPORTED_PATH "/config"
+ENV INNER_PATH "/var/www/vimbadmin"
 
 RUN a2enmod rewrite ssl env php7.4
-COPY apache/000-default.conf /etc/apache2/sites-available
-RUN a2ensite 000-default.conf
+RUN rm -f /etc/apache2/sites-available/*
+COPY apache/vimbadmin.conf /etc/apache2/sites-available
+RUN a2ensite vimbadmin.conf
 
-RUN git clone https://github.com/opensolutions/ViMbAdmin.git $TARGET_PATH
-WORKDIR $TARGET_PATH
+RUN git clone https://github.com/opensolutions/ViMbAdmin.git $INNER_PATH
+WORKDIR $INNER_PATH
+COPY config/public/* public/
+COPY config/application/configs/* application/configs/
 RUN composer install --prefer-dist --no-dev 
-RUN chown -R www-data: $TARGET_PATH/var
 
+WORKDIR /
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
