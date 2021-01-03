@@ -1,6 +1,6 @@
 # What is this?
 
-A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via [ViMbAdmin](https://www.vimbadmin.net/). If you just want to make things work without building anything locally, here's the [Docker Hub repository](https://hub.docker.com/repository/docker/joseantmazonsb/mailserver).
+A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via [ViMbAdmin](https://www.vimbadmin.net/). If you just want to make things work without building anything locally, here's the [Docker Hub repository](https://hub.docker.com/r/joseantmazonsb/mailserver).
 
 # Key features
 
