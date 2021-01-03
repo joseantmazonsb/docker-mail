@@ -25,20 +25,20 @@ The following table serves as a summary of the current state of things:
 | Architecture | Status |
 |-|-|
 | amd64 | Working |
-| aarch64 | Working |
+| arm64/aarch64 | Working |
 | armhf | Failing* |
 
 \* *There is no mysql/mariadb official docker image for ARMv7 systems. Also, `ubuntu:latest` have issues with this architecture. Nonetheless, I may consider working on a build for this architecture if requested.*
 
-# Building process
+# Building locally
 
-Now, here comes the funny part, and it's actually quite simple.
+If you wish to build all containers locally, you may do that as well. Just follow these steps:
 
 1. Ensure you have `docker` and `docker-compose` installed in your system.
 2. Checkout this repository (or download a release).
 3. Enter the root folder of the project.
 4. Create your `secrets` files. You can follow the sample structure of `docker-compose.yaml`.
-5. Modify `docker-compose.yaml` and `mail.env` files according to your `secrets` files and your own particular scenario (volumes to mount, certificates, etc)
+5. Modify `docker-compose.yaml` and `mail.env` files according to your `secrets` files and your own particular scenario (volumes to mount, certificates, etc).
 6. Run `docker-compose up -d`.
 
 # Environment variables
