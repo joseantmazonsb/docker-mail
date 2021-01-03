@@ -1,6 +1,6 @@
 # What is this?
 
-A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via [ViMbAdmin](https://www.vimbadmin.net/).
+A simple, quick way to deploy a *dockerized* mail server (SMTP/IMAP) based on postfix and dovecot and managed via [ViMbAdmin](https://www.vimbadmin.net/). If you just want to make things work without building anything locally, here's the [Docker Hub repository](https://hub.docker.com/repository/docker/joseantmazonsb/mailserver).
 
 # Key features
 
@@ -25,8 +25,8 @@ The following table serves as a summary of the current state of things:
 | Architecture | Status |
 |-|-|
 | amd64 | Working |
-| arm64/aarch64 | Working |
-| armhf | Failing* |
+| arm64 | Working |
+| arm32 | Failing* |
 
 \* *There is no mysql/mariadb official docker image for ARMv7 systems. Also, `ubuntu:latest` have issues with this architecture. Nonetheless, I may consider working on a build for this architecture if requested.*
 
@@ -41,9 +41,11 @@ If you wish to build all containers locally, you may do that as well. Just follo
 5. Modify `docker-compose.yaml` and `mail.env` files according to your `secrets` files and your own particular scenario (volumes to mount, certificates, etc).
 6. Run `docker-compose up -d`.
 
-# Environment variables
+## Environment variables
 
-The following table explains the variables to be filled in `db.env` and `mail.env` files:
+You will need to create two `.env` files in the same directory where `docker-compose.yaml` file is located: `db.env` and `mail.env`.
+
+The following table explains the variables to be filled in `db.env` file:
 
 | Variable | Explanation |
 |-|-|
@@ -51,7 +53,21 @@ The following table explains the variables to be filled in `db.env` and `mail.en
 | `MYSQL_DATABASE_FILE` | The path to the file containing the name of the database to be used by ViMbAdmin. Currently, **it needs to be `vimbadmin`**. |
 | `MYSQL_USER_FILE` | The path to the file containing the name of the mysql user to be used by ViMbadmin. |
 | `MYSQL_PASSWORD_FILE` | The path to the file containing password of the mysql user to be used by ViMbAdmin. |
+
+And the following table shows the variables to be filled in `mail.env`:
+
+| Variable | Explanation |
+|-|-|
 | `DOMAIN_NAME` | Your domain name: something like `example.com`. |
+
+Note that **all enviromental variables must be filled**.
+## Secrets
+
+The approach used for protecting sensitive information in this project is Docker Secrets, as you can see in the `docker-compose` template provided above. Using secrets is almost as easy as using environmental variables, just more safe. For instance, instead of directly setting the password for the ViMbAdmin mysql user via `MYSQL_PASSWORD` environmental variable, we use a variable (`MYSQL_PASSWORD_FILE`) that contains the path of the password, but not the password itself. The `docker-compose` template includes some comments to help you understand how to use these secrets, but, basically you will need to:
+
+1. Create a `secrets` folder in the same directory where `docker-compose.yaml` is located.
+2. Create a `txt`file inside the secrets' folder for each environment variable in `db.env`.
+3. Reference those files in `docker-compose.yaml`.
 
 # Configuration files and mail directory
 
