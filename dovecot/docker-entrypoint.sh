@@ -62,9 +62,16 @@ function set_new_domain_name {
     echo $new_name > $domain_file
 }
 
+function set_logs {
+    if [ ! -d $LOGS_FOLDER ]; then
+        mkdir -p $LOGS_FOLDER
+    fi
+}
+
 function start {
     echo "[INFO] Starting server..."
     set_secrets
+    set_logs
     set_conf
     set_permissions
     set_new_domain_name

@@ -4,8 +4,9 @@ RUN apt-get -qq update \
 
 ENV EXPORTED_PATH "/config"
 ENV INNER_PATH "/etc/dovecot"
+ENV LOGS_FOLDER "${INNER_PATH}/logs"
 
-COPY config/* ${INNER_PATH}/
+COPY config/root/* ${INNER_PATH}/
 COPY config/conf.d/* ${INNER_PATH}/conf.d/
 
 RUN groupadd -g 5000 vmail

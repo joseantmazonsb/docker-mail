@@ -73,7 +73,8 @@ services:
       - "${DOVECOT_CRT:-/ssl/ssl.crt}:/ssl/ssl.crt"
       - "${DOVECOT_KEY:-/ssl/ssl.key}:/ssl/ssl.key"
       - "${DOVECOT_FILES:-/srv/mailserver/dovecot}:/config"
-      - "${MAILDIR:-/srv/mailserver/dovecot/maildir}:/var/mail/vhosts"
+      - "${DOVECOT_LOGS:-/srv/mailserver/dovecot/logs}:/config/logs"
+      - "${MAILDIR:-/srv/mailserver/maildir}:/var/mail/vhosts"
     ports:
       - "143:143"
       - "993:993"

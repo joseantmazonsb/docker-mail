@@ -15,17 +15,15 @@ passdb {
 #  driver = prefetch
 #}
 
-#userdb {
-#  driver = sql
-#  args = /etc/dovecot/dovecot-sql.conf.ext
-#}
+userdb {
+  driver = sql
+  args = /etc/dovecot/dovecot-sql.conf.ext
+}
 
 # If you don't have any user-specific settings, you can avoid the user_query
 # by using userdb static instead of userdb sql, for example:
 # <doc/wiki/UserDatabase.Static.txt>
-userdb {
+#userdb {
   #driver = static
   #args = uid=vmail gid=vmail home=/var/vmail/vhosts/%d/%n
-  driver = sql
-  args = /etc/dovecot/dovecot-sql.conf.ext
-}
+#}
